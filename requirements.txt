@@ -1,0 +1,6 @@
+numpy==2.5.1
+pandas==2.3.3
+pykrx==1.2.8
+python-dotenv==1.2.2
+requests==2.34.2
+yfinance==1.5.1

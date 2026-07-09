@@ -1,0 +1,12 @@
+# 비밀/로컬 전용 — 절대 커밋 금지
+.env
+kakao_token.json
+kakao_refresh_token.txt
+
+# 실행 산출물·캐시
+.venv/
+data/
+reports/
+site/
+__pycache__/
+*.pyc

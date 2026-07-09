@@ -1,0 +1,63 @@
+name: daily-market-briefing
+
+on:
+  schedule:
+    # UTC 기준. 21:00 UTC(일~목) = 06:00 KST(월~금)
+    - cron: "0 21 * * 0-4"
+  workflow_dispatch: {}      # 수동 실행 버튼
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate report & send KakaoTalk
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
+          SEND_KAKAO: "1"
+          REPORT_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          PYTHONUTF8: "1"
+        run: python main.py
+
+      - name: Rotate Kakao refresh token if changed
+        if: ${{ hashFiles('kakao_refresh_token.txt') != '' && secrets.GH_PAT != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          NEW=$(cat kakao_refresh_token.txt)
+          gh secret set KAKAO_REFRESH_TOKEN --body "$NEW" --repo "${{ github.repository }}" \
+            && echo "refresh token 시크릿 갱신됨" || echo "시크릿 갱신 실패(무시)"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
