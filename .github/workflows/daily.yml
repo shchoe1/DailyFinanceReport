@@ -36,24 +36,14 @@ jobs:
 
       - name: Generate report & send KakaoTalk
         env:
-          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
-          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
-          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
-          SEND_KAKAO: "1"
+          # 클라우드(해외 IP)에서는 카카오가 미전달되므로 텔레그램으로 발송
+          SEND_KAKAO: "0"
+          SEND_TELEGRAM: "1"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           REPORT_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           PYTHONUTF8: "1"
         run: python main.py
-
-      - name: Rotate Kakao refresh token if changed
-        if: ${{ hashFiles('kakao_refresh_token.txt') != '' }}
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then echo "GH_PAT 미설정 → 토큰 회전 생략"; exit 0; fi
-          NEW=$(cat kakao_refresh_token.txt)
-          gh secret set KAKAO_REFRESH_TOKEN --body "$NEW" --repo "${{ github.repository }}" \
-            && echo "refresh token 시크릿 갱신됨" || echo "시크릿 갱신 실패(무시)"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

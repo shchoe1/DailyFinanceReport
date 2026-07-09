@@ -9,7 +9,7 @@ import sys
 import datetime as dt
 import traceback
 
-from config import SEND_KAKAO, KAKAO_TOKEN_FILE
+from config import SEND_KAKAO, SEND_TELEGRAM, KAKAO_TOKEN_FILE
 from sources.investors import load_and_update
 from sources.nasdaq import fetch_nasdaq, fetch_usdkrw
 from sources.sectors_kr import fetch_kr_sectors
@@ -103,22 +103,39 @@ def main() -> int:
     if dry:
         log("[--dry-run] 발송 생략.")
         return 0
-    if not SEND_KAKAO:
-        log("[설정] SEND_KAKAO=0 → 발송 생략.")
-        return 0
-    if not (KAKAO_TOKEN_FILE.exists() or os.getenv("KAKAO_REFRESH_TOKEN")):
-        log("[안내] 토큰 없음 → 로컬은 'python kakao_auth.py', 클라우드는 KAKAO_REFRESH_TOKEN 시크릿 설정. (발송 생략)")
-        return 0
 
-    try:
-        from kakao import send_messages
-        n = send_messages(chunks, link_url=report_url)
-        log(f"카카오 발송 완료: {n}건" + (f" (자세히보기 → {report_url})" if report_url else ""))
-    except Exception as e:
-        log(f"[오류] 카카오 발송 실패: {e}")
-        traceback.print_exc()
-        return 1
-    return 0
+    ok = True
+    sent_any = False
+
+    # 카카오 (로컬/한국 IP 전용 — 해외 IP는 카카오가 미전달)
+    if SEND_KAKAO:
+        if KAKAO_TOKEN_FILE.exists() or os.getenv("KAKAO_REFRESH_TOKEN"):
+            try:
+                from kakao import send_messages
+                n = send_messages(chunks, link_url=report_url)
+                log(f"카카오 발송 완료: {n}건" + (f" (자세히보기 → {report_url})" if report_url else ""))
+                sent_any = True
+            except Exception as e:
+                log(f"[오류] 카카오 발송 실패: {e}")
+                traceback.print_exc()
+                ok = False
+        else:
+            log("[안내] 카카오 토큰 없음 → 발송 생략 (로컬: kakao_auth.py / 클라우드: KAKAO_REFRESH_TOKEN)")
+
+    # 텔레그램 (클라우드 포함 어디서든 동작)
+    if SEND_TELEGRAM:
+        try:
+            from telegram_send import send_telegram
+            n = send_telegram(chunks, link_url=report_url)
+            log(f"텔레그램 발송 완료: {n}건")
+            sent_any = True
+        except Exception as e:
+            log(f"[오류] 텔레그램 발송 실패: {e}")
+            ok = False
+
+    if not (SEND_KAKAO or SEND_TELEGRAM):
+        log("[설정] SEND_KAKAO=0, SEND_TELEGRAM=0 → 발송 생략.")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

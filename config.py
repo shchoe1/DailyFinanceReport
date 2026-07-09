@@ -21,7 +21,11 @@ KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", "")
 KAKAO_TOKEN_FILE = BASE / "kakao_token.json"
 
 # --- 발송 옵션 ---
+# 카카오는 해외 IP(클라우드) 발송이 막히므로 로컬(한국)에서만, 텔레그램은 클라우드에서.
 SEND_KAKAO = os.getenv("SEND_KAKAO", "1") == "1"
+SEND_TELEGRAM = os.getenv("SEND_TELEGRAM", "0") == "1"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
 # --- 리포트 웹 게시(GitHub Pages) — 카톡 '자세히 보기' 링크용 ---
 GITHUB_USER = os.getenv("GITHUB_USER", "")     # GitHub 사용자명
