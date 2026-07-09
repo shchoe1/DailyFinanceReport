@@ -87,6 +87,15 @@ def send_text(text: str, link_url: str | None = None) -> None:
                       timeout=15)
     if r.status_code != 200:
         raise RuntimeError(f"카카오 발송 실패 {r.status_code}: {r.text}")
+    # 카카오는 성공 시 {"result_code":0}. 200이어도 result_code!=0 이면 미전달.
+    try:
+        body = r.json()
+    except ValueError:
+        body = {}
+    print(f"[kakao] status=200 result_code={body.get('result_code')} body={r.text[:200]}",
+          flush=True)
+    if body.get("result_code", 0) != 0:
+        raise RuntimeError(f"카카오 미전달 result_code={body.get('result_code')}: {r.text}")
 
 
 def send_messages(messages: list[str], gap_sec: float = 0.6,
