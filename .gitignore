@@ -10,3 +10,5 @@ reports/
 site/
 __pycache__/
 *.pyc
+.env.bak*
+*.bak_*

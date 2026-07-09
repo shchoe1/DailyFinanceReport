@@ -76,8 +76,12 @@ def collect():
 
 def main() -> int:
     dry = "--dry-run" in sys.argv
-    today = dt.date.today().strftime("%Y-%m-%d")
-    log(f"=== 한국증시 수급 브리핑 시작 ({today}) ===")
+    # 실행 시각을 항상 한국시간(KST)으로 — 클라우드(UTC)와 하루 어긋남 방지
+    KST = dt.timezone(dt.timedelta(hours=9))
+    now_kst = dt.datetime.now(KST)
+    today = now_kst.strftime("%Y-%m-%d")
+    gen_at = now_kst.strftime("%Y-%m-%d %H:%M KST")
+    log(f"=== 한국증시 수급 브리핑 시작 ({gen_at}) ===")
 
     inv, nasdaq, krs, deposit, fx, stocks, news = collect()
     if not any(v is not None and not v.empty for v in inv.values()):
@@ -85,10 +89,10 @@ def main() -> int:
         return 2
 
     A = build_analysis(inv, nasdaq, krs, deposit, fx, stocks, news)
-    path = save_html(A, today)
+    path = save_html(A, today, gen_at)
     log(f"HTML 리포트 저장: {path}")
 
-    # 웹 게시(surge) → 카톡 '자세히 보기' 링크
+    # 웹 게시 → 카톡/텔레그램 '자세히 보기' 링크
     report_url = None
     try:
         from publish import publish_report
@@ -97,7 +101,7 @@ def main() -> int:
     except Exception as e:
         log(f"[경고] 웹 게시 실패: {e}")
 
-    chunks = kakao_chunks(A, today)
+    chunks = kakao_chunks(A, today, gen_at)
     log(f"카카오 메시지 {len(chunks)}건 생성 (최대 {max(len(c) for c in chunks)}자)")
 
     if dry:

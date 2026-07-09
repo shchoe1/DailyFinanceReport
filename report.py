@@ -11,7 +11,7 @@ def _f(n: int) -> str:
 
 
 # ---------- 카카오 메시지(요약) ----------
-def kakao_chunks(A: dict, today: str) -> list[str]:
+def kakao_chunks(A: dict, today: str, gen_at: str | None = None) -> list[str]:
     """카카오 텍스트 템플릿(최대 200자) 제한에 맞춘 2~3개 메시지."""
     tone = A["us_tone"]
     fx = A.get("fx") or {}
@@ -19,7 +19,7 @@ def kakao_chunks(A: dict, today: str) -> list[str]:
     msgs = []
 
     # 1) 헤드라인 + 미국 시황
-    head = (f"📈 {today} 한국증시 수급 브리핑\n"
+    head = (f"📈 한국증시 수급 브리핑\n🕕 {gen_at or today} 생성\n"
             f"[美 전일] 나스닥 {tone['ixic']:+.1f}% · 반도체 {tone['sox']:+.1f}%\n"
             f"→ {tone['tone']}")
     msgs.append(head[:200])
@@ -251,7 +251,8 @@ def _news_block(A: dict) -> str:
     <div class="sub">🔴High 🟠Medium 🟡Low 영향도 · 시각은 KST</div>"""
 
 
-def build_html(A: dict, today: str) -> str:
+def build_html(A: dict, today: str, gen_at: str | None = None) -> str:
+    gen_at = gen_at or today
     tone = A["us_tone"]
     # 미국 섹터
     us_rows = ""
@@ -284,7 +285,7 @@ def build_html(A: dict, today: str) -> str:
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{today} 한국증시 수급 브리핑</title>
+<title>{gen_at} · 한국증시 수급 브리핑</title>
 <style>
  body{{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;max-width:860px;margin:0 auto;padding:18px;color:#1a1a1a;background:#fafafa}}
  h1{{font-size:22px;margin:.2em 0}} h2{{font-size:18px;margin-top:1.4em;border-left:4px solid #2b6;padding-left:8px}}
@@ -298,7 +299,8 @@ def build_html(A: dict, today: str) -> str:
  ul{{margin:.3em 0;padding-left:18px;font-size:13px}}
  .disc{{color:#999;font-size:11px;margin-top:20px;border-top:1px solid #ddd;padding-top:10px}}
 </style></head><body>
-<h1>📈 {today} 한국증시 수급 브리핑</h1>
+<h1>📈 한국증시 수급 브리핑</h1>
+<div style="font-size:14px;color:#2b6;font-weight:700;margin:-4px 0 6px">🕕 {gen_at} 실행 기준</div>
 <div class="tone">
  <b>미국 전일 시황 (최근 마감 {A.get('us_asof') or '-'})</b><br>
  나스닥 <b>{tone['ixic']:+.2f}%</b> · S&amp;P/필반 반도체 <b>{tone['sox']:+.2f}%</b> ·
@@ -328,13 +330,13 @@ def build_html(A: dict, today: str) -> str:
 <div class="disc">
  ⚠️ 본 리포트는 KRX 대체(네이버 금융)·yfinance 공개데이터 기반의 <b>확률적 휴리스틱 추정</b>입니다.
  외국인·기관·개인의 실제 당일 매매를 보장하지 않으며, 투자 판단의 책임은 이용자 본인에게 있습니다.
- 생성: {dt.datetime.now().strftime('%Y-%m-%d %H:%M')} (자동)
+ 생성: {gen_at} (자동)
 </div>
 </body></html>"""
 
 
-def save_html(A: dict, today: str) -> str:
-    html = build_html(A, today)
+def save_html(A: dict, today: str, gen_at: str | None = None) -> str:
+    html = build_html(A, today, gen_at)
     path = REPORTS_DIR / f"report_{today}.html"
     path.write_text(html, encoding="utf-8")
     return str(path)
