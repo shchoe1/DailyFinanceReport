@@ -7,6 +7,36 @@
 > ⚠️ **면책**: 본 봇의 모든 '예측'은 KRX 대체(네이버 금융)·yfinance **공개 데이터 기반의 확률적 휴리스틱**입니다.
 > 외국인/기관/개인의 실제 당일 매매를 보장하지 않으며, **투자 권유가 아닙니다.** 투자 판단·책임은 이용자 본인에게 있습니다.
 
+**실행 방식은 2가지** — ⓐ 로컬 PC(윈도우 작업 스케줄러) 또는 ⓑ **GitHub Actions(클라우드, PC 불필요)**.
+클라우드로 돌리려면 아래 [클라우드 실행(GitHub Actions)](#클라우드-실행-github-actions) 참고.
+
+---
+
+## 클라우드 실행 (GitHub Actions)
+PC를 켜둘 필요 없이 매 평일 06:00(KST)에 GitHub 서버가 실행 → 리포트 생성 → GitHub Pages 게시 → 카톡 발송.
+
+1. 이 폴더를 **공개(public) GitHub 저장소**로 업로드 (아래 '업로드' 참고)
+2. 저장소 **Settings → Secrets and variables → Actions → New repository secret** 로 아래 추가:
+   - `KAKAO_REST_API_KEY` — REST API 키
+   - `KAKAO_CLIENT_SECRET` — 클라이언트 시크릿(사용 시)
+   - `KAKAO_REFRESH_TOKEN` — 로컬 `kakao_token.json` 의 `refresh_token` 값
+   - `GH_PAT` *(선택)* — refresh token 자동 회전용 PAT (Secrets: write 권한). 미설정이면 ~2개월마다 위 값을 수동 갱신
+3. 저장소 **Settings → Pages → Source: GitHub Actions** 로 설정
+4. 카카오 개발자 **앱 > 플랫폼(Web)** 에 `https://<사용자명>.github.io` 등록
+5. 저장소 **Actions 탭 → daily-market-briefing → Run workflow** 로 즉시 테스트
+
+> 스케줄은 `.github/workflows/daily.yml` 의 cron `0 21 * * 0-4`(=06:00 KST 월~금). 시간 변경은 UTC 기준으로 수정.
+> 클라우드에서는 로컬 작업 스케줄러(`register_task.ps1`)가 필요 없습니다.
+
+### 업로드 (로컬 → GitHub)
+```powershell
+cd C:\Fin
+git remote add origin https://github.com/<사용자명>/<저장소>.git
+git branch -M main
+git push -u origin main      # 브라우저로 GitHub 로그인 창이 뜨면 인증
+```
+> `.env`·`kakao_token.json` 등 비밀 파일은 `.gitignore` 로 **업로드에서 자동 제외**됩니다.
+
 ---
 
 ## 무엇을 분석하나
