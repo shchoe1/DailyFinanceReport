@@ -24,6 +24,15 @@ def log(msg: str) -> None:
     print(f"[{dt.datetime.now():%H:%M:%S}] {msg}", flush=True)
 
 
+def _published_today(report_url: str) -> bool:
+    """오늘자 리포트가 이미 웹(Pages)에 올라가 있으면 True — 백업 실행의 중복 발송 방지."""
+    try:
+        import requests
+        return requests.get(report_url, timeout=10).status_code == 200
+    except Exception:
+        return False   # 확인 실패 시엔 발송(누락보다 중복이 나음)
+
+
 def collect():
     inv = {}
     for mk in ("KOSPI", "KOSDAQ"):
@@ -128,14 +137,17 @@ def main() -> int:
 
     # 텔레그램 (클라우드 포함 어디서든 동작)
     if SEND_TELEGRAM:
-        try:
-            from telegram_send import send_telegram
-            n = send_telegram(chunks, link_url=report_url)
-            log(f"텔레그램 발송 완료: {n}건")
-            sent_any = True
-        except Exception as e:
-            log(f"[오류] 텔레그램 발송 실패: {e}")
-            ok = False
+        if report_url and _published_today(report_url):
+            log("[텔레그램] 오늘 리포트가 이미 발행됨 → 중복 발송 생략(백업 실행)")
+        else:
+            try:
+                from telegram_send import send_telegram
+                n = send_telegram(chunks, link_url=report_url)
+                log(f"텔레그램 발송 완료: {n}건")
+                sent_any = True
+            except Exception as e:
+                log(f"[오류] 텔레그램 발송 실패: {e}")
+                ok = False
 
     if not (SEND_KAKAO or SEND_TELEGRAM):
         log("[설정] SEND_KAKAO=0, SEND_TELEGRAM=0 → 발송 생략.")
