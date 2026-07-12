@@ -299,8 +299,7 @@ def build_html(A: dict, today: str, gen_at: str | None = None) -> str:
  ul{{margin:.3em 0;padding-left:18px;font-size:13px}}
  .disc{{color:#999;font-size:11px;margin-top:20px;border-top:1px solid #ddd;padding-top:10px}}
 </style></head><body>
-<h1>📈 한국증시 수급 브리핑</h1>
-<div style="font-size:14px;color:#2b6;font-weight:700;margin:-4px 0 6px">🕕 {gen_at} 실행 기준</div>
+<h1>📈 {gen_at} 한국증시 수급 브리핑</h1>
 <div class="tone">
  <b>미국 전일 시황 (최근 마감 {A.get('us_asof') or '-'})</b><br>
  나스닥 <b>{tone['ixic']:+.2f}%</b> · S&amp;P/필반 반도체 <b>{tone['sox']:+.2f}%</b> ·
